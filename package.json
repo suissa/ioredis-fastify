@@ -1,0 +1,33 @@
+{
+  "name": "fastify-ioredis-api-ts",
+  "version": "1.0.0",
+  "description": "Uma API RESTful com Fastify e TypeScript para gerir uma base de dados Redis.",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "nodemon src/server.ts"
+  },
+  "keywords": [
+    "fastify",
+    "redis",
+    "ioredis",
+    "api",
+    "typescript"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "fastify": "^4.24.3",
+    "ioredis": "^5.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.9.0",
+    "nodemon": "^3.0.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  }
+}
+
+
