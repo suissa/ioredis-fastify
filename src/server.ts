@@ -1,40 +1,74 @@
-/**
- * Ponto de entrada principal para a API Fastify que interage com o Redis.
- *
- * Para executar:
- * 1. Instale as dependências: npm install
- * 2. Crie um ficheiro .env (use .env.example como modelo)
- * 3. Inicie o servidor em modo de desenvolvimento: npm run dev
- */
-import Fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import Fastify, { FastifyInstance } from 'fastify';
 import Redis from 'ioredis';
 import * as dotenv from 'dotenv';
 
-// Carrega as variáveis de ambiente do ficheiro .env
+// Importa os módulos de rotas
+import { registerKeyRoutes } from './routes/keys';
+import { registerHashRoutes } from './routes/hashes';
+import { registerListRoutes } from './routes/lists';
+import { registerSetRoutes } from './routes/sets';
+import { registerSortedSetRoutes } from './routes/sortedSets';
+import { registerStreamRoutes } from './routes/streams';
+import { registerGeospatialRoutes } from './routes/geospatial';
+import { registerBitmapRoutes } from './routes/bitmaps';
+import { registerHyperLogLogRoutes } from './routes/hyperloglogs';
+import { registerPubSubRoutes } from './routes/pubsub';
+import { registerTransactionRoutes } from './routes/transaction';
+import { registerPipelineRoutes } from './routes/pipeline';
+
+
+// Carrega as variáveis de ambiente
 dotenv.config();
 
-// --- Definições de Tipos para as Rotas ---
+const fastify: FastifyInstance = Fastify({ logger: true });
 
-interface IKeyParams {
-    key: string;
+// Validação das variáveis de ambiente
+if (!process.env.REDIS_URL) {
+    fastify.log.error('A variável REDIS_URL não está definida no seu ficheiro .env');
+    process.exit(1);
 }
 
-interface IPostKeyBody {
-    value: unknown;
-    ex?: number;
-}
+// Cria a instância do Redis
+const redis = new Redis(process.env.REDIS_URL);
 
-interface IKeysQuery {
-    pattern?: string;
-}
+redis.on('connect', () => fastify.log.info('Conectado ao Redis com sucesso.'));
+redis.on('error', (err) => fastify.log.error('Erro na conexão com o Redis:', err));
 
-interface IHashPostBody {
-    [key: string]: string;
-}
+// --- Registo das Rotas com Prefixo de API ---
+const apiVersion = process.env.API_VERSION || 'v1';
 
-interface IListGetQuery {
-    start?: number;
-    stop?: number;
+fastify.register(
+    async (apiInstance) => {
+        // Passa a instância da API e o cliente Redis para cada módulo de rotas
+        registerKeyRoutes(apiInstance, redis);
+        registerHashRoutes(apiInstance, redis);
+        registerListRoutes(apiInstance, redis);
+        registerSetRoutes(apiInstance, redis);
+        registerSortedSetRoutes(apiInstance, redis);
+        registerStreamRoutes(apiInstance, redis);
+        registerGeospatialRoutes(apiInstance, redis);
+        registerBitmapRoutes(apiInstance, redis);
+        registerHyperLogLogRoutes(apiInstance, redis);
+        registerPubSubRoutes(apiInstance, redis);
+        registerTransactionRoutes(apiInstance, redis);
+        registerPipelineRoutes(apiInstance, redis);
+    },
+    { prefix: `/api/${apiVersion}` }
+);
+
+// --- Inicialização do Servidor ---
+const start = async () => {
+    try {
+        const port = Number(process.env.PORT) || 3000;
+        await fastify.listen({ port, host: '0.0.0.0' });
+        fastify.log.info(`Servidor a escutar na porta ${port}, com prefixo /api/${apiVersion}`);
+    } catch (err) {
+        fastify.log.error(err);
+        process.exit(1);
+    }
+};
+
+start();    stop?: number;
 }
 
 interface IListPostBody {
