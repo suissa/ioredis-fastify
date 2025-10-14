@@ -69,4 +69,24 @@ Listas
  * GET /lists/:key: Obtém elementos de uma lista. (?start=0&stop=10)
  * POST /lists/:key: Adiciona elementos a uma lista.
    * Corpo: { "values": ["item1", "item2"], "direction": "left" } (direction opcional)
- 
+
+
+ API Fastify com ioredis (TypeScript)
+​(... toda a secção de instalação e configuração inicial ...)
+​4. Endpoints da API
+​Todos os endpoints estão disponíveis sob o prefixo /api/v1 (ou a versão definida no seu ficheiro .env).
+​Gestão de Chaves e Strings
+​GET /keys/:key: Obtém o valor de uma chave.
+​POST /keys/:key: Define o valor de uma chave.
+​DELETE /keys/:key: Apaga uma chave.
+​GET /keys: Lista chaves por padrão. (?pattern=user:*)
+​POST /keys/exists: Verifica se uma ou mais chaves existem.
+​Corpo: { "keys": ["chave1", "chave2"] }
+​GET /keys/:key/type: Obtém o tipo de dado de uma chave.
+​POST /keys/:key/rename: Renomeia uma chave.
+​Corpo: { "newKey": "novo-nome-da-chave" }
+​Pub/Sub
+​POST /pubsub/publish: Publica uma mensagem num canal.
+​Corpo: { "channel": "noticias", "message": "Olá Mundo!" }
+​Nota sobre Subscrição (SUBSCRIBE): Escutar canais é uma operação de longa duração que não é adequada para uma API REST. Para implementar a funcionalidade de subscrição num cliente, a tecnologia recomendada é WebSockets.
+​Transações (MULTI/EXEC)
