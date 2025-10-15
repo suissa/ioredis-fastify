@@ -1,0 +1,14 @@
+# Ignorar dependências locais, pois serão instaladas dentro do contentor
+node_modules
+
+# Ignorar o ficheiro .env para não expor segredos na imagem
+.env
+
+# Ignorar ficheiros de log
+*.log
+
+# Ignorar a pasta de build local, pois será gerada no contentor
+dist
+
+# Ignorar a pasta de documentação
+docs/ 
