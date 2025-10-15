@@ -3,6 +3,45 @@
 Uma API REST modular construída com Fastify e ioredis, oferecendo acesso HTTP completo às estruturas de dados e comandos do Redis — incluindo operações de keys, hashes, lists, sets, sorted sets, streams, pub/sub, bitmaps, geospatial, pipelines, hyperloglogs e transações.
 
 
+
+
+---
+
+🧠 Sobre o Desenvolvimento do Projeto
+
+Este projeto nasceu como uma experiência de integração entre inteligência artificial, navegador e desenvolvimento colaborativo em tempo real.
+Foi criado inteiramente utilizando ferramentas baseadas em nuvem e assistentes de IA, demonstrando que hoje é possível construir sistemas complexos sem depender de um ambiente local tradicional.
+
+🧩 Tecnologias e Ferramentas Utilizadas
+
+Gemini (Google AI) — usado para a criação dos códigos. 
+
+GPT (OpenAI) — responsável pela melhoria da documentação e correções de código. 
+
+Stackblitz CodeFlow — ambiente de edição de código.
+
+CodeX (via navegador) — gerador de testes e github actions. 
+
+Navegador (Brave/Chrome) — o ponto central de toda a experiência: o projeto foi desenvolvido, depurado e versionado inteiramente via navegador, sem IDEs instaladas localmente.
+
+
+🚀 Por que isso é importante?
+
+Este projeto é uma prova viva de que a programação assistida por IA já atingiu um nível em que um desenvolvedor pode:
+
+Criar, revisar e publicar sistemas completos diretamente do navegador.
+
+Integrar múltiplos agentes inteligentes com diferentes especialidades.
+
+Manter qualidade profissional e rigor técnico, mesmo em um fluxo totalmente remoto e distribuído.
+
+
+💬 Filosofia do Projeto
+
+Mais do que apenas código, este projeto é um experimento sobre como humanos e inteligências artificiais podem colaborar criativamente — onde o raciocínio humano define o propósito e a IA acelera a execução.
+Cada linha de código aqui representa um passo em direção ao futuro do desenvolvimento: inteligente, acessível e livre de barreiras locais.
+
+
 ---
 
 🧠 Visão Geral
