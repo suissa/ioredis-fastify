@@ -38,8 +38,40 @@ redis.on("error", (err: Error) => {
   fastify.log.error({ err }, "Erro na conexão com o Redis");
 });
 
+import fastifyStatic from "@fastify/static";
+import path from "path";
+import fastifyWebsocket from "@fastify/websocket";
+
 // --- Registra as rotas modulares ---
 const apiVersion = process.env.API_VERSION || "v1";
+
+fastify.register(fastifyWebsocket);
+
+fastify.register(async function (fastify) {
+  fastify.get('/ws/realtime', { websocket: true }, (connection, req) => {
+    const interval = setInterval(() => {
+      const data = {
+        time: new Date().toLocaleTimeString(),
+        value: Math.random() * 100,
+      };
+      connection.socket.send(JSON.stringify(data));
+    }, 1000);
+
+    connection.socket.on('close', () => {
+      clearInterval(interval);
+    });
+  });
+});
+
+// Servir os arquivos estáticos do dashboard
+fastify.register(fastifyStatic, {
+  root: path.join(__dirname, '..', 'src', 'manager', 'dist'),
+  prefix: '/',
+});
+
+fastify.setNotFoundHandler((request, reply) => {
+  reply.sendFile('index.html');
+});
 
 fastify.register(
   async (apiInstance: FastifyInstance) => {
