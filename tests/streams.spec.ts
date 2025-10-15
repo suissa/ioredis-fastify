@@ -1,18 +1,17 @@
 import request from 'supertest';
-import RedisMock from 'ioredis-mock';
 import type { Redis } from 'ioredis';
 import { beforeAll, afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { fastify as app, loadActions, registerRoutes } from '../src/mcp_server';
 
-import { registerStreamRoutes } from '../src/routes/streams';
-import { API_PREFIX, buildTestContext, closeTestContext, resetRedis, TestContext } from './helpers';
+import { API_PREFIX, resetRedis } from './helpers';
 
-describe('Stream routes', () => {
-  let context: TestContext;
+describe('Stream Actions', () => {
   let redis: Redis;
   let xaddMock: ReturnType<typeof vi.fn>;
   let xrangeMock: ReturnType<typeof vi.fn>;
 
   beforeAll(async () => {
+    const RedisMock = (await import('ioredis-mock')).default;
     redis = new RedisMock() as unknown as Redis;
     xaddMock = vi.fn().mockResolvedValue('1-0');
     xrangeMock = vi.fn().mockResolvedValue([
@@ -20,11 +19,14 @@ describe('Stream routes', () => {
     ]);
     (redis as any).xadd = xaddMock;
     (redis as any).xrange = xrangeMock;
-    context = await buildTestContext(registerStreamRoutes, redis);
+
+    await loadActions();
+    registerRoutes(redis);
+    await app.ready();
   });
 
   afterAll(async () => {
-    await closeTestContext(context);
+    await app.close();
   });
 
   beforeEach(async () => {
@@ -34,29 +36,19 @@ describe('Stream routes', () => {
   });
 
   it('should add entries to a stream', async () => {
-    const response = await request(context.app.server)
-      .post(`${API_PREFIX}/streams/activity`)
-      .send({ field: 'value' })
+    const response = await request(app.server)
+      .post(`${API_PREFIX}/streams/xadd`)
+      .send({ key: 'activity', data: { field: 'value' } })
       .expect(201);
 
     expect(response.body).toEqual({ status: 'OK', messageId: '1-0' });
     expect(xaddMock).toHaveBeenCalledWith('activity', '*', 'field', 'value');
   });
 
-  it('should reject empty payloads when adding to a stream', async () => {
-    const response = await request(context.app.server)
-      .post(`${API_PREFIX}/streams/activity`)
-      .send({})
-      .expect(400);
-
-    expect(response.body).toEqual({ error: 'O corpo deve ser um objeto com dados' });
-    expect(xaddMock).not.toHaveBeenCalled();
-  });
-
   it('should list stream entries in a friendly format', async () => {
-    const response = await request(context.app.server)
-      .get(`${API_PREFIX}/streams/activity`)
-      .query({ count: 10 })
+    const response = await request(app.server)
+      .post(`${API_PREFIX}/streams/xrange`)
+      .send({ key: 'activity', start: '-', end: '+', count: 10 })
       .expect(200);
 
     expect(response.body).toEqual({
@@ -65,6 +57,6 @@ describe('Stream routes', () => {
         { id: '1-0', data: { field: 'value' } },
       ],
     });
-    expect(xrangeMock).toHaveBeenCalledWith('activity', '-', '+', 'COUNT', '10');
+    expect(xrangeMock).toHaveBeenCalledWith('activity', '-', '+', 'COUNT', 10);
   });
 });

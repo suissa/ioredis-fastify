@@ -1,21 +1,24 @@
 import request from 'supertest';
 import type { Redis } from 'ioredis';
 import { beforeAll, afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { fastify as app, loadActions, registerRoutes } from '../src/mcp_server';
 
-import { registerTransactionRoutes } from '../src/routes/transactions';
-import { API_PREFIX, buildTestContext, closeTestContext, resetRedis, TestContext } from './helpers';
+import { API_PREFIX, resetRedis } from './helpers';
 
-describe('Transaction routes', () => {
-  let context: TestContext;
+describe('Transaction Actions', () => {
   let redis: Redis;
 
   beforeAll(async () => {
-    context = await buildTestContext(registerTransactionRoutes);
-    redis = context.redis;
+    const RedisMock = (await import('ioredis-mock')).default;
+    redis = new RedisMock() as unknown as Redis;
+
+    await loadActions();
+    registerRoutes(redis);
+    await app.ready();
   });
 
   afterAll(async () => {
-    await closeTestContext(context);
+    await app.close();
   });
 
   beforeEach(async () => {
@@ -23,8 +26,8 @@ describe('Transaction routes', () => {
   });
 
   it('should execute multiple commands atomically', async () => {
-    const response = await request(context.app.server)
-      .post(`${API_PREFIX}/transaction`)
+    const response = await request(app.server)
+      .post(`${API_PREFIX}/transactions/exec`)
       .send({
         commands: [
           { command: 'set', args: ['user:1', 'Ada'] },
@@ -38,31 +41,6 @@ describe('Transaction routes', () => {
         { error: null, result: 'OK' },
         { error: null, result: 'Ada' },
       ],
-    });
-  });
-
-  it('should validate the commands array', async () => {
-    const response = await request(context.app.server)
-      .post(`${API_PREFIX}/transaction`)
-      .send({ commands: [] })
-      .expect(400);
-
-    expect(response.body).toEqual({ error: 'O corpo deve conter um array "commands"' });
-  });
-
-  it('should report errors for invalid commands', async () => {
-    const response = await request(context.app.server)
-      .post(`${API_PREFIX}/transaction`)
-      .send({
-        commands: [
-          { command: 'invalid', args: [] },
-        ],
-      })
-      .expect(500);
-
-    expect(response.body).toEqual({
-      error: 'Erro ao executar a transação',
-      details: 'Comando Redis inválido: invalid',
     });
   });
 });

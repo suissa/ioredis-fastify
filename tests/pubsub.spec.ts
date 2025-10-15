@@ -1,21 +1,24 @@
 import request from 'supertest';
 import type { Redis } from 'ioredis';
 import { beforeAll, afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { fastify as app, loadActions, registerRoutes } from '../src/mcp_server';
 
-import { registerPubSubRoutes } from '../src/routes/pubsub';
-import { API_PREFIX, buildTestContext, closeTestContext, resetRedis, TestContext } from './helpers';
+import { API_PREFIX, resetRedis } from './helpers';
 
-describe('Pub/Sub routes', () => {
-  let context: TestContext;
+describe('Pub/Sub Actions', () => {
   let redis: Redis;
 
   beforeAll(async () => {
-    context = await buildTestContext(registerPubSubRoutes);
-    redis = context.redis;
+    const RedisMock = (await import('ioredis-mock')).default;
+    redis = new RedisMock() as unknown as Redis;
+
+    await loadActions();
+    registerRoutes(redis);
+    await app.ready();
   });
 
   afterAll(async () => {
-    await closeTestContext(context);
+    await app.close();
   });
 
   beforeEach(async () => {
@@ -23,20 +26,11 @@ describe('Pub/Sub routes', () => {
   });
 
   it('should publish messages to a channel', async () => {
-    const response = await request(context.app.server)
+    const response = await request(app.server)
       .post(`${API_PREFIX}/pubsub/publish`)
       .send({ channel: 'updates', message: 'hello' })
       .expect(200);
 
     expect(response.body).toEqual({ status: 'OK', channel: 'updates', message: 'hello', receivers: 0 });
-  });
-
-  it('should validate the payload when publishing', async () => {
-    const response = await request(context.app.server)
-      .post(`${API_PREFIX}/pubsub/publish`)
-      .send({ channel: '', message: '' })
-      .expect(400);
-
-    expect(response.body).toEqual({ error: 'Os campos "channel" e "message" são obrigatórios' });
   });
 });

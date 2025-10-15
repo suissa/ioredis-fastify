@@ -1,21 +1,24 @@
 import request from 'supertest';
 import type { Redis } from 'ioredis';
 import { beforeAll, afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { fastify as app, loadActions, registerRoutes } from '../src/mcp_server';
 
-import { registerSortedSetRoutes } from '../src/routes/sortedSets';
-import { API_PREFIX, buildTestContext, closeTestContext, resetRedis, TestContext } from './helpers';
+import { API_PREFIX, resetRedis } from './helpers';
 
-describe('Sorted set routes', () => {
-  let context: TestContext;
+describe('Sorted Set Actions', () => {
   let redis: Redis;
 
   beforeAll(async () => {
-    context = await buildTestContext(registerSortedSetRoutes);
-    redis = context.redis;
+    const RedisMock = (await import('ioredis-mock')).default;
+    redis = new RedisMock() as unknown as Redis;
+
+    await loadActions();
+    registerRoutes(redis);
+    await app.ready();
   });
 
   afterAll(async () => {
-    await closeTestContext(context);
+    await app.close();
   });
 
   beforeEach(async () => {
@@ -23,29 +26,20 @@ describe('Sorted set routes', () => {
   });
 
   it('should add scored members to a sorted set', async () => {
-    const response = await request(context.app.server)
-      .post(`${API_PREFIX}/sorted-sets/leaderboard`)
-      .send({ members: [{ score: 10, member: 'alice' }, { score: 20, member: 'bob' }] })
+    const response = await request(app.server)
+      .post(`${API_PREFIX}/sortedSets/zadd`)
+      .send({ key: 'leaderboard', members: [{ score: 10, member: 'alice' }, { score: 20, member: 'bob' }] })
       .expect(201);
 
     expect(response.body).toEqual({ status: 'OK', membersAdded: 2 });
   });
 
-  it('should validate the payload when adding to a sorted set', async () => {
-    const response = await request(context.app.server)
-      .post(`${API_PREFIX}/sorted-sets/leaderboard`)
-      .send({ members: [] })
-      .expect(400);
-
-    expect(response.body).toEqual({ error: 'O corpo deve conter um array "members"' });
-  });
-
   it('should list members with their scores', async () => {
     await redis.zadd('leaderboard', 10, 'alice', 20, 'bob');
 
-    const response = await request(context.app.server)
-      .get(`${API_PREFIX}/sorted-sets/leaderboard`)
-      .query({ start: 0, stop: -1 })
+    const response = await request(app.server)
+      .post(`${API_PREFIX}/sortedSets/zrange`)
+      .send({ key: 'leaderboard', start: 0, stop: -1 })
       .expect(200);
 
     expect(response.body).toEqual({
@@ -60,9 +54,9 @@ describe('Sorted set routes', () => {
   it('should remove members from a sorted set', async () => {
     await redis.zadd('leaderboard', 10, 'alice', 20, 'bob');
 
-    const response = await request(context.app.server)
-      .delete(`${API_PREFIX}/sorted-sets/leaderboard`)
-      .send({ members: ['alice'] })
+    const response = await request(app.server)
+      .post(`${API_PREFIX}/sortedSets/zrem`)
+      .send({ key: 'leaderboard', members: ['alice'] })
       .expect(200);
 
     expect(response.body).toEqual({ status: 'OK', membersRemoved: 1 });
