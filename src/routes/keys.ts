@@ -33,6 +33,10 @@ export function registerKeyRoutes(fastify: FastifyInstance, redis: Redis) {
             if (!newKey) {
                 return reply.code(400).send({ error: 'O campo "newKey" é obrigatório' });
             }
+            const exists = await redis.exists(key);
+            if (!exists) {
+                return reply.code(404).send({ error: 'Chave de origem não encontrada' });
+            }
             await redis.rename(key, newKey);
             reply.send({ status: 'OK', message: `Chave '${key}' renomeada para '${newKey}'` });
         } catch (err: any) {
