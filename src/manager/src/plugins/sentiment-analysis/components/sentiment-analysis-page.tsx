@@ -5,9 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
+interface SentimentResult {
+  sentiment: "Positive" | "Negative";
+  confidence: number;
+}
+
 export function SentimentAnalysisPage() {
   const [text, setText] = useState("")
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<SentimentResult | null>(null)
 
   const handleAnalyze = async () => {
     // Simula uma chamada de API
