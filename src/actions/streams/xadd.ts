@@ -17,7 +17,7 @@ export const xaddAction = {
   },
   action: (redis: Redis) => async (request: any, reply: any) => {
     const { key, data } = request.body;
-    const args = Object.entries(data).flat();
+    const args = Object.entries(data).flat() as string[];
     const messageId = await redis.xadd(key, '*', ...args);
     reply.code(201).send({ status: 'OK', messageId });
   },

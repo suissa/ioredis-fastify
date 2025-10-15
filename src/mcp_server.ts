@@ -61,7 +61,7 @@ export function registerRoutes(redis: Redis) {
 
   fastify.register(async (instance: FastifyInstance) => {
     instance.get('/ws', { websocket: true }, (connection) => {
-      connection.socket.on('message', async message => {
+      connection.socket.on('message', async (message: Buffer) => {
         try {
           const { action: actionName, payload } = JSON.parse(message.toString());
           if (!actions.has(actionName)) {
