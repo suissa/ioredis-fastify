@@ -65,5 +65,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # ✅ Corrige automaticamente antes de checar
+      - name: Run Prettier --write
+        run: npx prettier --write "src/**/*.{ts,js,json,md,yml}"
+
+      # 🔍 Agora checa se está tudo padronizado
       - name: Check code formatting
         run: npx prettier --check "src/**/*.{ts,js,json,md,yml}" 
