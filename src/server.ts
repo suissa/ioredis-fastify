@@ -13,8 +13,8 @@ import { registerGeospatialRoutes } from "./routes/geospatial";
 import { registerBitmapRoutes } from "./routes/bitmaps";
 import { registerHyperLogLogRoutes } from "./routes/hyperloglogs";
 import { registerPubSubRoutes } from "./routes/pubsub";
-import { registerTransactionRoutes } from "./routes/transaction";
-import { registerPipelineRoutes } from "./routes/pipeline";
+import { registerTransactionRoutes } from "./routes/transactions";
+import { registerPipelineRoutes } from "./routes/pipelining";
 
 // --- Carrega variáveis de ambiente ---
 dotenv.config();
