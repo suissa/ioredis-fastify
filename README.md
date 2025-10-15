@@ -1,92 +1,257 @@
-# API Fastify com ioredis (TypeScript)
+🚀 ioredis-fastify
 
-Esta é uma API RESTful robusta construída com Fastify e TypeScript para gerir e interagir com uma base de dados Redis, usando a biblioteca ioredis.
-O uso de TypeScript garante segurança de tipos, o que torna o código mais previsível e fácil de manter.
-
-## Pré-requisitos
- * Node.js (v16 ou mais recente)
- * Uma instância do Redis em execução
- * NPM ou Yarn
-
-   
-## 1. Instalação
-Primeiro, clone o repositório e instale as dependências de produção e desenvolvimento.
-# Clone este projeto (ou apenas guarde os ficheiros)
-npm install
-
-Este comando irá instalar todas as dependências listadas no package.json, incluindo typescript, ts-node e os tipos necessários.
-
-## 2. Configuração
-A API conecta-se ao Redis usando uma URL de conexão. Crie um ficheiro .env na raiz do projeto para armazenar essa informação.
- * Copie o ficheiro de exemplo:
-   cp .env.example .env
-
- * Edite o ficheiro .env e defina a URL de conexão do seu Redis:
-   REDIS_URL=redis://usuario:senha@hostname:porta
-
-   Para uma instância local padrão do Redis, sem senha, a configuração será:
-   REDIS_URL=redis://localhost:6379
-
-## 3. Executando o Servidor
-Modo de Desenvolvimento
-Para desenvolvimento, use nodemon e ts-node. O servidor reiniciará automaticamente após qualquer alteração no código.
-
-```
-npm run dev
-```
-
-### Modo de Produção
-Para produção, primeiro compile os ficheiros TypeScript para JavaScript e depois inicie o servidor a partir dos ficheiros compilados.
- * Compilar o código:
-```
-npm run build
-```
-
-Este comando cria uma pasta dist com o código JavaScript resultante.
- * Iniciar o servidor:
-```
-npm start
-```
-
-O servidor será iniciado na porta 3000 por padrão.
-
-## 4. Endpoints da API
-Os endpoints são os mesmos da versão JavaScript. Consulte a seção abaixo para exemplos.
-
-Chave-Valor (Strings)
- * GET /keys/:key: Obtém o valor de uma chave.
- * POST /keys/:key: Define o valor para uma chave.
-   * Corpo: { "value": { "data": "meu objeto" }, "ex": 60 } (ex opcional)
- * DELETE /keys/:key: Apaga uma chave.
- * GET /keys: Lista chaves que correspondem a um padrão. (?pattern=user:*)
-
-Hashes
- * GET /hashes/:key: Obtém todos os campos de um hash.
- * POST /hashes/:key: Define campos num hash.
-   * Corpo: { "nome": "Maria Silva", "idade": "30" }
-
-Listas
- * GET /lists/:key: Obtém elementos de uma lista. (?start=0&stop=10)
- * POST /lists/:key: Adiciona elementos a uma lista.
-   * Corpo: { "values": ["item1", "item2"], "direction": "left" } (direction opcional)
+Uma API REST modular construída com Fastify e ioredis, oferecendo acesso HTTP completo às estruturas de dados e comandos do Redis — incluindo operações de keys, hashes, lists, sets, sorted sets, streams, pub/sub, bitmaps, geospatial, pipelines, hyperloglogs e transações.
 
 
- API Fastify com ioredis (TypeScript)
-​(... toda a secção de instalação e configuração inicial ...)
-​4. Endpoints da API
-​Todos os endpoints estão disponíveis sob o prefixo /api/v1 (ou a versão definida no seu ficheiro .env).
-​Gestão de Chaves e Strings
-​GET /keys/:key: Obtém o valor de uma chave.
-​POST /keys/:key: Define o valor de uma chave.
-​DELETE /keys/:key: Apaga uma chave.
-​GET /keys: Lista chaves por padrão. (?pattern=user:*)
-​POST /keys/exists: Verifica se uma ou mais chaves existem.
-​Corpo: { "keys": ["chave1", "chave2"] }
-​GET /keys/:key/type: Obtém o tipo de dado de uma chave.
-​POST /keys/:key/rename: Renomeia uma chave.
-​Corpo: { "newKey": "novo-nome-da-chave" }
-​Pub/Sub
-​POST /pubsub/publish: Publica uma mensagem num canal.
-​Corpo: { "channel": "noticias", "message": "Olá Mundo!" }
-​Nota sobre Subscrição (SUBSCRIBE): Escutar canais é uma operação de longa duração que não é adequada para uma API REST. Para implementar a funcionalidade de subscrição num cliente, a tecnologia recomendada é WebSockets.
-​Transações (MULTI/EXEC)
+---
+
+🧠 Visão Geral
+
+Este projeto tem como objetivo fornecer uma camada HTTP simples, extensível e performática sobre o Redis, ideal para:
+
+Debug ou inspeção rápida de dados Redis via API REST;
+
+Testes e automações sem precisar instalar o redis-cli;
+
+Aprendizado e prototipagem de integrações complexas com Redis.
+
+
+Cada tipo de dado Redis é exposto em um módulo separado dentro de src/routes, o que torna o código organizado e fácil de expandir.
+
+
+---
+
+⚙️ Instalação
+
+git clone https://github.com/suissa/ioredis-fastify.git
+cd ioredis-fastify
+pnpm install
+
+Crie um arquivo .env com as variáveis:
+
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+PORT=3000
+API_PREFIX=/api/v1
+
+Inicie o servidor:
+
+pnpm dev
+# ou
+pnpm start
+
+A API estará disponível em:
+
+http://localhost:3000/api/v1
+
+
+---
+
+🔌 Estrutura do Projeto
+
+src/
+├── server.ts         # ponto de entrada do Fastify
+├── routes/
+│   ├── bitmaps.ts
+│   ├── geospatial.ts
+│   ├── hashes.ts
+│   ├── hyperloglogs.ts
+│   ├── keys.ts
+│   ├── lists.ts
+│   ├── pipelining.ts
+│   ├── pubsub.ts
+│   ├── sets.ts
+│   ├── sortedSets.ts
+│   ├── streams.ts
+│   └── transactions.ts
+
+
+---
+
+📡 Endpoints (prefixo /api/v1)
+
+Cada módulo expõe operações equivalentes aos comandos Redis correspondentes.
+Abaixo, um resumo por tipo:
+
+
+---
+
+🔑 Keys (keys.ts)
+
+Método	Rota	Descrição
+
+GET	/api/v1/keys/:key	Obter valor de uma chave
+POST	/api/v1/keys/:key	Definir valor (aceita TTL opcional ex)
+DELETE	/api/v1/keys/:key	Remover chave
+GET	/api/v1/keys	Buscar por padrão (?pattern=*user*)
+GET	/api/v1/keys/:key/type	Tipo da chave
+POST	/api/v1/keys/:key/rename	Renomear
+POST	/api/v1/keys/exists	Verificar existência de múltiplas chaves
+
+
+
+---
+
+🧱 Hashes (hashes.ts)
+
+Método	Rota	Descrição
+
+GET	/api/v1/hashes/:key	Retorna todos os campos (HGETALL)
+POST	/api/v1/hashes/:key	Define campos (HMSET)
+
+
+
+---
+
+📜 Lists (lists.ts)
+
+Método	Rota	Descrição
+
+GET	/api/v1/lists/:key	Retorna intervalo (LRANGE)
+POST	/api/v1/lists/:key	Insere valores (LPUSH/RPUSH)
+
+
+
+---
+
+🧩 Sets (sets.ts)
+
+Método	Rota	Descrição
+
+GET	/api/v1/sets/:key	Retorna membros (SMEMBERS)
+POST	/api/v1/sets/:key	Adiciona valores (SADD)
+DELETE	/api/v1/sets/:key	Remove valores (SREM)
+
+
+
+---
+
+🔢 Sorted Sets (sortedSets.ts)
+
+Método	Rota	Descrição
+
+GET	/api/v1/sortedSets/:key	Retorna elementos (ZRANGE)
+POST	/api/v1/sortedSets/:key	Adiciona elemento com score (ZADD)
+DELETE	/api/v1/sortedSets/:key/:member	Remove membro (ZREM)
+
+
+
+---
+
+📈 HyperLogLogs (hyperloglogs.ts)
+
+Método	Rota	Descrição
+
+POST	/api/v1/hyperloglogs/:key	Adiciona elementos (PFADD)
+GET	/api/v1/hyperloglogs/:key	Retorna contagem (PFCOUNT)
+POST	/api/v1/hyperloglogs/merge/:dest	Mescla logs (PFMERGE)
+
+
+
+---
+
+🧮 Bitmaps (bitmaps.ts)
+
+Método	Rota	Descrição
+
+POST	/api/v1/bitmaps/:key	Define bit (SETBIT)
+GET	/api/v1/bitmaps/:key/:offset	Lê bit (GETBIT)
+GET	/api/v1/bitmaps/:key/count	Conta bits 1 (BITCOUNT)
+
+
+
+---
+
+🌍 Geospatial (geospatial.ts)
+
+Método	Rota	Descrição
+
+POST	/api/v1/geospatial/:key	Adiciona coordenadas (GEOADD)
+GET	/api/v1/geospatial/:key/pos	Retorna coordenadas (GEOPOS)
+GET	/api/v1/geospatial/:key/dist	Distância (GEODIST)
+GET	/api/v1/geospatial/:key/radius	Busca por raio (GEORADIUS)
+
+
+
+---
+
+🔁 Pipelining (pipelining.ts)
+
+Método	Rota	Descrição
+
+POST	/api/v1/pipelining	Executa múltiplos comandos em batch (pipeline.exec())
+
+
+
+---
+
+💬 Pub/Sub (pubsub.ts)
+
+Método	Rota	Descrição
+
+POST	/api/v1/pubsub/publish	Publica mensagem (PUBLISH)
+
+
+
+---
+
+⚙️ Transactions (transactions.ts)
+
+Método	Rota	Descrição
+
+POST	/api/v1/transactions	Executa comandos atômicos (MULTI / EXEC)
+
+
+
+---
+
+🌊 Streams (streams.ts)
+
+Método	Rota	Descrição
+
+POST	/api/v1/streams/:key	Adiciona entrada (XADD)
+GET	/api/v1/streams/:key	Lê mensagens (XRANGE / XREAD)
+DELETE	/api/v1/streams/:key/:id	Remove entrada (XDEL)
+
+
+
+---
+
+🧰 Tecnologias
+
+Fastify – framework HTTP de alta performance
+
+ioredis – cliente Redis robusto com suporte a cluster
+
+TypeScript – tipagem segura e escalável
+
+dotenv – configuração de ambiente
+
+
+
+---
+
+🧪 Testando com cURL
+
+# Teste o servidor
+curl http://localhost:3000/api/v1/ping
+
+# Crie uma chave
+curl -X POST http://localhost:3000/api/v1/keys/user:1 -H "Content-Type: application/json" -d '{"value": {"name": "Suissa"}, "ex": 60}'
+
+
+---
+
+🤝 Contribuindo
+
+Pull requests são bem-vindos!
+Siga o estilo existente, mantendo módulos separados em src/routes/ por tipo de dado Redis.
+
+
+---
+
+📄 Licença
+
+MIT © Suissa
+ 
