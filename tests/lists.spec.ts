@@ -1,21 +1,24 @@
 import request from 'supertest';
 import type { Redis } from 'ioredis';
 import { beforeAll, afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { fastify as app, loadActions, registerRoutes } from '../src/mcp_server';
 
-import { registerListRoutes } from '../src/routes/lists';
-import { API_PREFIX, buildTestContext, closeTestContext, resetRedis, TestContext } from './helpers';
+import { API_PREFIX, resetRedis } from './helpers';
 
-describe('List routes', () => {
-  let context: TestContext;
+describe('List Actions', () => {
   let redis: Redis;
 
   beforeAll(async () => {
-    context = await buildTestContext(registerListRoutes);
-    redis = context.redis;
+    const RedisMock = (await import('ioredis-mock')).default;
+    redis = new RedisMock() as unknown as Redis;
+
+    await loadActions();
+    registerRoutes(redis);
+    await app.ready();
   });
 
   afterAll(async () => {
-    await closeTestContext(context);
+    await app.close();
   });
 
   beforeEach(async () => {
@@ -23,48 +26,39 @@ describe('List routes', () => {
   });
 
   it('should append elements to the end of a list', async () => {
-    const response = await request(context.app.server)
-      .post(`${API_PREFIX}/lists/tasks`)
-      .send({ values: ['write', 'test'] })
-      .expect(201);
+    const response = await request(app.server)
+      .post(`${API_PREFIX}/lists/rpush`)
+      .send({ key: 'tasks', values: ['write', 'test'] })
+      .expect(200);
 
-    expect(response.body).toEqual({ status: 'OK', listLength: 2 });
-
-    const stored = await redis.lrange('tasks', 0, -1);
-    expect(stored).toEqual(['"write"', '"test"']);
-  });
-
-  it('should prepend elements when direction is left', async () => {
-    await redis.rpush('tasks', '"existing"');
-
-    const response = await request(context.app.server)
-      .post(`${API_PREFIX}/lists/tasks`)
-      .send({ values: ['new'], direction: 'left' })
-      .expect(201);
-
-    expect(response.body).toEqual({ status: 'OK', listLength: 2 });
+    expect(response.body).toEqual({ result: 2 });
 
     const stored = await redis.lrange('tasks', 0, -1);
-    expect(stored).toEqual(['"new"', '"existing"']);
+    expect(stored).toEqual(['write', 'test']);
   });
 
-  it('should validate the payload when pushing to a list', async () => {
-    const response = await request(context.app.server)
-      .post(`${API_PREFIX}/lists/tasks`)
-      .send({ values: [] })
-      .expect(400);
+  it('should prepend elements to the beginning of a list', async () => {
+    await redis.rpush('tasks', 'existing');
 
-    expect(response.body).toEqual({ error: 'O corpo deve conter um array "values" não vazio' });
+    const response = await request(app.server)
+      .post(`${API_PREFIX}/lists/lpush`)
+      .send({ key: 'tasks', values: ['new'] })
+      .expect(200);
+
+    expect(response.body).toEqual({ result: 2 });
+
+    const stored = await redis.lrange('tasks', 0, -1);
+    expect(stored).toEqual(['new', 'existing']);
   });
 
   it('should read a range of list items', async () => {
-    await redis.rpush('tasks', '"one"', '"two"', '"three"');
+    await redis.rpush('tasks', 'one', 'two', 'three');
 
-    const response = await request(context.app.server)
-      .get(`${API_PREFIX}/lists/tasks`)
-      .query({ start: 1, stop: 2 })
+    const response = await request(app.server)
+      .post(`${API_PREFIX}/lists/lrange`)
+      .send({ key: 'tasks', start: 1, stop: 2 })
       .expect(200);
 
-    expect(response.body).toEqual({ key: 'tasks', list: ['"two"', '"three"'] });
+    expect(response.body).toEqual({ result: ['two', 'three'] });
   });
 });

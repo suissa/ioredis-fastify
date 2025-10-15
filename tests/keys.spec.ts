@@ -1,25 +1,17 @@
-import Fastify, { FastifyInstance } from 'fastify';
 import request from 'supertest';
 import RedisMock from 'ioredis-mock';
 import type { Redis } from 'ioredis';
-
-import { registerKeyRoutes } from '../src/routes/keys';
+import { fastify as app, loadActions, registerRoutes } from '../src/mcp_server';
 
 const API_PREFIX = '/api/v1';
 
-describe('Key routes', () => {
-  let app: FastifyInstance;
+describe('Key Actions', () => {
   let redis: Redis;
 
   beforeAll(async () => {
     redis = new RedisMock() as unknown as Redis;
-
-    app = Fastify();
-    app.register((instance, _opts, done) => {
-      registerKeyRoutes(instance, redis);
-      done();
-    }, { prefix: API_PREFIX });
-
+    await loadActions();
+    registerRoutes(redis);
     await app.ready();
   });
 
@@ -40,6 +32,9 @@ describe('Key routes', () => {
       .send({ keys: ['existing', 'missing'] })
       .expect(200);
 
+    // The new action returns a count, the old route returned an object.
+    // Let's check the action file: src/actions/keys/exists.ts
+    // It sends back { existing_keys_count: count }
     expect(response.body).toEqual({ existing_keys_count: 1 });
   });
 
@@ -56,8 +51,9 @@ describe('Key routes', () => {
     await redis.set('oldKey', 'important');
 
     const response = await request(app.server)
-      .post(`${API_PREFIX}/keys/oldKey/rename`)
-      .send({ newKey: 'newKey' })
+      // The endpoint is now /keys/rename and the key is in the body
+      .post(`${API_PREFIX}/keys/rename`)
+      .send({ key: 'oldKey', newKey: 'newKey' })
       .expect(200);
 
     expect(response.body).toEqual({
@@ -71,8 +67,9 @@ describe('Key routes', () => {
 
   it('should return not found when trying to rename a missing key', async () => {
     const response = await request(app.server)
-      .post(`${API_PREFIX}/keys/missing/rename`)
-      .send({ newKey: 'newKey' })
+      // The endpoint is now /keys/rename and the key is in the body
+      .post(`${API_PREFIX}/keys/rename`)
+      .send({ key: 'missing', newKey: 'newKey' })
       .expect(404);
 
     expect(response.body).toEqual({ error: 'Chave de origem não encontrada' });
