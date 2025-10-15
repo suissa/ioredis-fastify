@@ -1,0 +1,39 @@
+# --- ESTÁGIO 1: Build ---
+# Usamos uma imagem Node com todas as ferramentas de build
+FROM node:20-alpine AS builder
+
+# Define o diretório de trabalho dentro do contentor
+WORKDIR /usr/src/app
+
+# Copia os ficheiros de dependências
+COPY package*.json ./
+
+# Instala todas as dependências, incluindo as de desenvolvimento para a compilação
+RUN npm ci
+
+# Copia todo o código fonte
+COPY . .
+
+# Compila o código TypeScript para JavaScript
+RUN npm run build
+
+# --- ESTÁGIO 2: Produção ---
+# Usamos uma imagem Node limpa para a imagem final
+FROM node:20-alpine
+
+WORKDIR /usr/src/app
+
+# Copia apenas os ficheiros de dependências
+COPY package*.json ./
+
+# Instala APENAS as dependências de produção
+RUN npm ci --omit=dev
+
+# Copia o código JavaScript compilado do estágio de build
+COPY --from=builder /usr/src/app/dist ./dist
+
+# Expõe a porta em que a aplicação vai rodar
+EXPOSE 3000
+
+# O comando para iniciar a aplicação
+CMD ["node", "dist/server.js"]

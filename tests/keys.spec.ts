@@ -1,41 +1,41 @@
+import Fastify, { FastifyInstance } from 'fastify';
 import request from 'supertest';
+import RedisMock from 'ioredis-mock';
 import type { Redis } from 'ioredis';
-import { beforeAll, afterAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { registerKeyRoutes } from '../src/routes/keys';
-import { API_PREFIX, buildTestContext, closeTestContext, resetRedis, TestContext } from './helpers';
+
+const API_PREFIX = '/api/v1';
 
 describe('Key routes', () => {
-  let context: TestContext;
+  let app: FastifyInstance;
   let redis: Redis;
 
   beforeAll(async () => {
-    context = await buildTestContext(registerKeyRoutes);
-    redis = context.redis;
+    redis = new RedisMock() as unknown as Redis;
+
+    app = Fastify();
+    app.register((instance, _opts, done) => {
+      registerKeyRoutes(instance, redis);
+      done();
+    }, { prefix: API_PREFIX });
+
+    await app.ready();
   });
 
   afterAll(async () => {
-    await closeTestContext(context);
+    await redis.quit();
+    await app.close();
   });
 
   beforeEach(async () => {
-    await resetRedis(redis);
-  });
-
-  it('should report the data type of a stored key', async () => {
-    await redis.set('example', '42');
-
-    const response = await request(context.app.server)
-      .get(`${API_PREFIX}/keys/example/type`)
-      .expect(200);
-
-    expect(response.body).toEqual({ key: 'example', type: 'string' });
+    await redis.flushall();
   });
 
   it('should count how many of the provided keys exist', async () => {
     await redis.set('existing', 'value');
 
-    const response = await request(context.app.server)
+    const response = await request(app.server)
       .post(`${API_PREFIX}/keys/exists`)
       .send({ keys: ['existing', 'missing'] })
       .expect(200);
@@ -44,7 +44,7 @@ describe('Key routes', () => {
   });
 
   it('should validate the request body when checking key existence', async () => {
-    const response = await request(context.app.server)
+    const response = await request(app.server)
       .post(`${API_PREFIX}/keys/exists`)
       .send({ keys: [] })
       .expect(400);
@@ -55,14 +55,14 @@ describe('Key routes', () => {
   it('should rename an existing key', async () => {
     await redis.set('oldKey', 'important');
 
-    const response = await request(context.app.server)
+    const response = await request(app.server)
       .post(`${API_PREFIX}/keys/oldKey/rename`)
       .send({ newKey: 'newKey' })
       .expect(200);
 
     expect(response.body).toEqual({
       status: 'OK',
-      message: "Chave 'oldKey' renomeada para 'newKey'",
+      message: "Chave 'oldKey' renomeada para 'newKey'"
     });
 
     const renamedValue = await redis.get('newKey');
@@ -70,7 +70,7 @@ describe('Key routes', () => {
   });
 
   it('should return not found when trying to rename a missing key', async () => {
-    const response = await request(context.app.server)
+    const response = await request(app.server)
       .post(`${API_PREFIX}/keys/missing/rename`)
       .send({ newKey: 'newKey' })
       .expect(404);

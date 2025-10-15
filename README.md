@@ -66,7 +66,37 @@ src/
 │   ├── streams.ts
 │   └── transactions.ts
 
+---
 
+## Guia de Uso do Docker
+
+Este guia explica como usar o Dockerfile e docker-compose.yml para criar um ambiente de desenvolvimento. 
+
+### Ambiente de Desenvolvimento com Docker Compose
+
+O docker-compose.yml permite-lhe iniciar a API e a base de dados Redis com um único comando, criando um ambiente isolado e consistente.
+Pré-requisitos:
+ * Docker instalado.
+ * Docker Compose (geralmente já vem com o Docker Desktop).
+Passos:
+ * Construa e Inicie os Contentores:
+   Na raiz do seu projeto, execute o comando:
+   docker-compose up --build
+
+   * --build: Força a reconstrução da imagem da sua API se houver alterações no Dockerfile ou no código.
+   * Para rodar em segundo plano (detached mode), use: docker-compose up --build -d.
+ * Teste a API:
+   O seu ambiente está pronto! A API estará a escutar em http://localhost:3000 e conectada ao Redis. Você pode testar com curl:
+   curl http://localhost:3000/api/v1/keys
+
+ * Pare os Contentores:
+   Quando terminar, pode parar todos os serviços com:
+   docker-compose down
+
+   * Se quiser remover também os volumes (apagar os dados do Redis), use: docker-compose down -v.
+
+ 
+ 
 ---
 
 📡 Endpoints (prefixo /api/v1)

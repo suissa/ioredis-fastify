@@ -1,0 +1,38 @@
+# Versão do Docker Compose
+version: '3.8'
+
+# Definição dos serviços (contentores)
+services:
+  # Serviço da nossa API
+  api:
+    # Constrói a imagem a partir do Dockerfile no diretório atual
+    build: .
+    container_name: redis-fastify-api
+    ports:
+      # Mapeia a porta 3000 do host para a porta 3000 do contentor
+      - "3000:3000"
+    environment:
+      # Define as variáveis de ambiente para o contentor da API
+      # Nota: Estamos a usar o nome do serviço 'redis' como hostname
+      REDIS_URL: redis://redis:6379
+      PORT: 3000
+      API_VERSION: v1
+    # Garante que o serviço 'redis' seja iniciado antes do serviço 'api'
+    depends_on:
+      - redis
+
+  # Serviço da base de dados Redis
+  redis:
+    # Usa a imagem oficial do Redis (versão Alpine, que é mais leve)
+    image: redis:7-alpine
+    container_name: redis_db
+    ports:
+      # Mapeia a porta do Redis para o host, útil para debugging
+      - "6379:6379"
+    volumes:
+      # Cria um volume para persistir os dados do Redis
+      - redis_data:/data
+
+# Definição dos volumes
+volumes:
+  redis_data: 
