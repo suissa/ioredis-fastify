@@ -15,11 +15,35 @@ import { registerHyperLogLogRoutes } from "./routes/hyperloglogs";
 import { registerPubSubRoutes } from "./routes/pubsub";
 import { registerTransactionRoutes } from "./routes/transactions";
 import { registerPipelineRoutes } from "./routes/pipelining";
+import swagger from "@fastify/swagger";
+import swaggerUi from "@fastify/swagger-ui";
 
 // --- Carrega variáveis de ambiente ---
 dotenv.config();
 
 const fastify: FastifyInstance = Fastify({ logger: true });
+
+// --- Swagger Definition ---
+fastify.register(swagger, {
+  openapi: {
+    info: {
+      title: "Test swagger",
+      description: "Testing the fastify swagger api",
+      version: "0.1.0",
+    },
+    servers: [{ url: "http://localhost:3000" }],
+  },
+});
+
+fastify.register(swaggerUi, {
+  routePrefix: "/documentation",
+  uiConfig: {
+    docExpansion: "full",
+    deepLinking: true,
+  },
+  staticCSP: true,
+  transformStaticCSP: (header) => header,
+});
 
 // --- Valida variáveis obrigatórias ---
 if (!process.env.REDIS_URL) {
